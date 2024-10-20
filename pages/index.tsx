@@ -1,107 +1,15 @@
 "use client"
 import { useEffect, useState } from "react";
-// import * as LitJsSdk from "@lit-protocol/lit-node-client";
-import { LitNodeClient, encryptString, encryptFile, decryptToString } from "@lit-protocol/lit-node-client";
-import { LitNetwork, LIT_RPC } from "@lit-protocol/constants";
+import { LitNodeClient, encryptString, encryptFile } from "@lit-protocol/lit-node-client";
+import { LitNetwork } from "@lit-protocol/constants";
 import {
   SignProtocolClient,
   SpMode,
   EvmChains,
-  IndexService,
-  decodeOnChainData,
-  DataLocationOnChain,
-  chainInfo,
-  SchemaItem
 } from "@ethsign/sp-sdk";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useChainId } from "wagmi";
-import {
-  createSiweMessage,
-  generateAuthSig,
-  LitAbility,
-  LitAccessControlConditionResource,
-} from "@lit-protocol/auth-helpers";
 
-
-import { ethers } from 'ethers';
-
-
-//const schemaId = "0x300";
-const schemaId = "0x381";
-const schemaId_full = "onchain_evm_84532_0x381";
 const indexingValue = "socialfly_app_0";
-
-const ONE_WEEK_FROM_NOW = new Date(
-  Date.now() + 1000 * 60 * 60 * 24 * 7
-).toISOString();
-
-const genWallet = async () => {
-  if (typeof window.ethereum !== 'undefined') {
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-    const ethersSigner = provider.getSigner();
-    return ethersSigner;
-  } else {
-    console.error("MetaMask is not installed!");
-    throw new Error("MetaMask is not installed");
-  }
-}
-
-
-
-const genAuthSig = async (
-  wallet: ethers.Signer,
-  client: LitNodeClient,
-  uri: string,
-  resources: LitResourceAbilityRequest[]
-) => {
-  const address = await wallet.getAddress();
-  console.log("genAuthSig address: ", address);
-
-  const blockHash = await client.getLatestBlockhash();
-  const message = await createSiweMessageWithRecaps({
-    walletAddress: address,
-    nonce: blockHash,
-    litNodeClient: client,
-    resources,
-    expiration: ONE_WEEK_FROM_NOW,
-    uri
-  })
-  const authSig = await generateAuthSig({
-    signer: wallet,
-    toSign: message,
-    address: address
-  });
-  return authSig;
-}
-
-const genSession = async (
-  wallet: ethers.Signer,
-  client: LitNodeClient,
-  resources: LitResourceAbilityRequest[]) => {
-  const sessionSigs = await client.getSessionSigs({
-    chain: "ethereum",
-    resourceAbilityRequests: resources,
-    authNeededCallback: async (params: AuthCallbackParams) => {
-      if (!params.expiration) {
-        throw new Error("expiration is required");
-      }
-      if (!params.resources) {
-        throw new Error("resourceAbilityRequests is required");
-      }
-      if (!params.uri) {
-        throw new Error("uri is required");
-      }
-      const authSig = genAuthSig(wallet, client, params.uri, params.resourceAbilityRequests ?? []);
-      return authSig;
-    }
-  });
-
-  return sessionSigs;
-}
-
-
 
 
 export default function Home() {
@@ -109,30 +17,7 @@ export default function Home() {
   const [pubkey, handlePubkey] = useState("");
   const [attId, handleAttId] = useState("");
   const [result, handleResult] = useState("");
-  const [uploadedImage, setUploadedImage] = useState(null);
   const [litNodeClient, handleLitNodeClient] = useState<LitNodeClient>();
-
-  const { address } = useAccount();
-  const chainId = useChainId();
-
-  //const PK = process.env.NEXT_PUBLIC_PK;
-  //   const ethersWallet = new ethers.Wallet(
-  //     PK, // Make sure to set this in your .env file
-  //     new ethers.providers.JsonRpcProvider(LIT_RPC.CHRONICLE_YELLOWSTONE)
-  //   );
-  // const accessControlConditions = [
-  //   {
-  //     contractAddress: "0x4d2C7E3F9e498EdaCbAa99C613C1b89b9B218877",
-  //     standardContractType: "",
-  //     chain: "ethereum",
-  //     method: "getApproval",
-  //     parameters: [":userAddress"],
-  //     returnValueTest: {
-  //       comparator: "=",
-  //       value: ethersWallet.address,
-  //     },
-  //   },
-  // ];
 
   //   const accessControlConditions = [
   //     {
@@ -211,11 +96,9 @@ export default function Home() {
     };
   };
 
-
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [imageUrl, setImageUrl] = useState<string>('');
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
@@ -275,8 +158,6 @@ export default function Home() {
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <ConnectButton />
 
-
-
         <input type="file" accept="image/*" onChange={handleFileChange} />
         <button onClick={uploadImage} disabled={loading || !file}>
           {loading ? 'Uploading...' : 'Upload'}
@@ -329,6 +210,10 @@ export default function Home() {
             async function successCallback(position) {
               const latitude = position.coords.latitude;
               const longitude = position.coords.longitude;
+
+              // HACKING IN BAD COORDINATES FOR TESTING
+              // const latitude = 500;
+              // const longitude = 500;
               console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
 
               const locationMessage = JSON.stringify({
