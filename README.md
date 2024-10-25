@@ -4,6 +4,8 @@ Socialfly is a decentralized social networking application that allows users to 
 
 Built for EthGlobal SF 2024.
 
+Note: This repo was started from a fork of https://github.com/EthSign/lit-protocol-encrypt-frontend
+
 ## How It Works
 
 Socialfly combines the strengths of two protocols:
